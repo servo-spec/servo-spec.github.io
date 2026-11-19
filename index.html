@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SimCard Collector</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg:#0f1117; --card:#1a1d27; --card2:#232734; --text:#e8eaf0;
+    --muted:#8b90a0; --accent:#4f8cff; --gold:#ffd24a; --purple:#b06cff;
+    --green:#3ddc84; --red:#ff5c5c;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg); color:var(--text); padding-bottom:80px;
+    min-height:100vh;
+  }
+  header{
+    position:sticky; top:0; z-index:10; background:rgba(15,17,23,.95);
+    backdrop-filter:blur(10px); padding:14px 16px; display:flex;
+    justify-content:space-between; align-items:center; border-bottom:1px solid #232734;
+  }
+  .balance{font-size:20px; font-weight:700; color:var(--gold);}
+  .balance small{color:var(--muted); font-size:11px; font-weight:400; display:block;}
+  .title{font-size:17px; font-weight:700;}
+  main{padding:16px; max-width:600px; margin:0 auto;}
+
+  .card{
+    background:var(--card); border-radius:16px; padding:16px; margin-bottom:14px;
+    border:1px solid #232734;
+  }
+  .btn{
+    width:100%; padding:14px; border-radius:12px; border:none; cursor:pointer;
+    font-size:15px; font-weight:600; background:var(--accent); color:#fff;
+    transition:transform .1s, opacity .2s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .btn.secondary{background:var(--card2); color:var(--text);}
+  .btn.gold{background:linear-gradient(135deg,#ffd24a,#ff9f1a); color:#1a1d27;}
+
+  .shop-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .shop-item{
+    background:var(--card2); border-radius:12px; padding:12px; text-align:center;
+    border:1px solid #2e3342;
+  }
+  .shop-item h3{margin:0 0 4px; font-size:14px;}
+  .shop-item .price{color:var(--gold); font-weight:700; font-size:14px; margin-bottom:8px;}
+  .shop-item .chance{color:var(--muted); font-size:11px; margin-bottom:10px;}
+  .shop-item button{width:100%; padding:9px; font-size:13px;}
+
+  .collection{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;}
+  .num-card{
+    background:var(--card2); border-radius:12px; padding:12px; position:relative;
+    border:1px solid #2e3342; overflow:hidden;
+  }
+  .num-card.rare{background:linear-gradient(135deg,#2a1f45,#1f1a30); border-color:var(--purple);}
+  .num-card.legendary{background:linear-gradient(135deg,#3d3418,#2a2410); border-color:var(--gold);}
+  .num-card .phone{font-size:15px; font-weight:700; letter-spacing:.5px; margin-bottom:6px;}
+  .num-card .rarity{font-size:11px; text-transform:uppercase; letter-spacing:1px;}
+  .num-card .price{font-size:12px; color:var(--gold); margin-top:6px;}
+  .num-card.rare .rarity{color:var(--purple);}
+  .num-card.legendary .rarity{color:var(--gold);}
+
+  .empty{text-align:center; color:var(--muted); padding:30px 0; font-size:14px;}
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.75); display:none;
+    align-items:center; justify-content:center; z-index:100; padding:20px;
+    backdrop-filter:blur(4px);
+  }
+  .modal-overlay.active{display:flex;}
+  .modal{
+    background:var(--card); border-radius:20px; padding:24px; max-width:340px; width:100%;
+    text-align:center; animation:pop .25s ease;
+    border:1px solid #2e3342;
+  }
+  @keyframes pop{from{transform:scale(.85); opacity:0;} to{transform:scale(1); opacity:1;}}
+  .modal .big-phone{font-size:24px; font-weight:800; letter-spacing:1px; margin:12px 0;}
+  .modal .big-rarity{font-size:13px; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px;}
+  .modal .value{color:var(--gold); font-size:18px; font-weight:700; margin-bottom:16px;}
+
+  nav{
+    position:fixed; bottom:0; left:0; right:0; background:rgba(15,17,23,.98);
+    border-top:1px solid #232734; display:flex; z-index:50; padding:8px 0;
+    backdrop-filter:blur(10px);
+  }
+  nav button{
+    flex:1; background:none; border:none; color:var(--muted); font-size:11px;
+    padding:6px 0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px;
+  }
+  nav button.active{color:var(--accent);}
+  nav button .icon{font-size:20px;}
+
+  .tab{display:none;}
+  .tab.active{display:block;}
+
+  /* Admin */
+  .admin-panel{display:none;}
+  .admin-panel.active{display:block;}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:12px; color:var(--muted); margin-bottom:4px;}
+  .field input, .field select{
+    width:100%; padding:10px; border-radius:10px; border:1px solid #2e3342;
+    background:var(--card2); color:var(--text); font-size:14px;
+  }
+  .admin-list{max-height:300px; overflow-y:auto; margin-top:10px;}
+  .admin-row{
+    display:flex; justify-content:space-between; align-items:center; padding:8px 10px;
+    background:var(--card2); border-radius:8px; margin-bottom:6px; font-size:13px;
+  }
+  .admin-row .del{background:var(--red); border:none; color:#fff; border-radius:6px; padding:4px 8px; cursor:pointer; font-size:12px;}
+  .hint{font-size:11px; color:var(--muted); margin-top:8px; line-height:1.4;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="title">📱 SimCard Collector</div>
+  </div>
+  <div class="balance">
+    <small>Баланс</small>
+    <span id="balance">0</span> ₽
+  </div>
+</header>
+
+<main>
+  <!-- МАГАЗИН -->
+  <div class="tab active" id="tab-shop">
+    <div class="card">
+      <h2 style="margin:0 0 12px; font-size:15px;">Купить симку</h2>
+      <div class="shop-grid" id="shopGrid"></div>
+      <div class="hint">Каждая симка даёт случайный номер. Чем дороже — тем выше шанс на редкий номер.</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <button class="btn gold" id="bonusBtn">🎁 Получить бонус</button>
+      <div class="hint">Бесплатные деньги раз в 30 секунд (для теста).</div>
+    </div>
+  </div>
+
+  <!-- КОЛЛЕКЦИЯ -->
+  <div class="tab" id="tab-collection">
+    <div class="card">
+      <h2 style="margin:0 0 12px; font-size:15px;">Моя коллекция <span id="collCount" style="color:var(--muted); font-weight:400;"></span></h2>
+      <div class="collection" id="collection"></div>
+      <div class="empty" id="emptyColl">Коллекция пуста. Купите первую симку!</div>
+    </div>
+  </div>
+
+  <!-- АДМИНКА -->
+  <div class="tab" id="tab-admin">
+    <div class="card">
+      <h2 style="margin:0 0 12px; font-size:15px;">⚙️ Админ-панель</h2>
+      
+      <div class="field">
+        <label>Баланс игрока (₽)</label>
+        <input type="number" id="adminBalance" value="0">
+        <button class="btn secondary" style="margin-top:8px;" id="setBalanceBtn">Установить баланс</button>
+      </div>
+
+      <div class="field">
+        <label>Добавить номер в коллекцию вручную</label>
+        <input type="text" id="adminPhone" placeholder="+7 999 123-45-67">
+        <select id="adminRarity" style="margin-top:8px;">
+          <option value="common">Обычный</option>
+          <option value="rare">Редкий</option>
+          <option value="legendary">Легендарный</option>
+        </select>
+        <input type="number" id="adminValue" placeholder="Стоимость, ₽" style="margin-top:8px;">
+        <button class="btn secondary" style="margin-top:8px;" id="addNumberBtn">Добавить номер</button>
+      </div>
+
+      <div class="field">
+        <label>Настройка шансов выпадения (в %)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="number" id="chanceCommon" placeholder="Обычный %" value="70">
+          <input type="number" id="chanceRare" placeholder="Редкий %" value="25">
+          <input type="number" id="chanceLegendary" placeholder="Легенд %" value="5">
+        </div>
+        <button class="btn secondary" style="margin-top:8px;" id="saveChancesBtn">Сохранить шансы</button>
+        <div class="hint">Сумма шансов должна быть 100%.</div>
+      </div>
+
+      <div class="field">
+        <label>Список номеров в пуле (генерируется автоматически)</label>
+        <div class="admin-list" id="adminNumberList"></div>
+      </div>
+
+      <button class="btn" style="background:var(--red);" id="resetBtn">🗑️ Сбросить весь прогресс</button>
+    </div>
+  </div>
+</main>
+
+<!-- МОДАЛКА ВЫПАДЕНИЯ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div style="font-size:40px;" id="modalIcon">📱</div>
+    <div class="big-rarity" id="modalRarity">Обычный</div>
+    <div class="big-phone" id="modalPhone">+7 000 000-00-00</div>
+    <div class="value" id="modalValue">0 ₽</div>
+    <button class="btn" id="modalClose">Забрать</button>
+  </div>
+</div>
+
+<nav>
+  <button class="active" data-tab="shop"><span class="icon">🛒</span>Магазин</button>
+  <button data-tab="collection"><span class="icon">📚</span>Коллекция</button>
+  <button data-tab="admin"><span class="icon">⚙️</span>Админ</button>
+</nav>
+
+<script>
+/* ==================== ДАННЫЕ ==================== */
+const STORAGE_KEY = 'simcard_game_v1';
+
+const defaultState = {
+  balance: 1000,
+  collection: [], // {phone, rarity, value, id}
+  chances: { common: 70, rare: 25, legendary: 5 },
+  shopPrices: { basic: 100, premium: 500, elite: 2000 },
+  lastBonus: 0,
+  isAdmin: true // для теста; в проде проверять по Telegram ID
+};
+
+let state = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return Object.assign({}, defaultState, JSON.parse(raw));
+  }catch(e){}
+  return JSON.parse(JSON.stringify(defaultState));
+}
+
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  renderAll();
+}
+
+/* ==================== ГЕНЕРАЦИЯ НОМЕРОВ ==================== */
+const RARITY_DATA = {
+  common:    { label:'Обычный',     icon:'📱', minVal:50,   maxVal:300,   color:'var(--text)' },
+  rare:      { label:'Редкий',      icon:'💎', minVal:500,  maxVal:3000,  color:'var(--purple)' },
+  legendary: { label:'Легендарный', icon:'👑', minVal:5000, maxVal:50000, color:'var(--gold)' }
+};
+
+// Красивые префиксы для редкости
+const PREFIXES = {
+  common:    ['900','901','902','903','904','905','906','908','909','950','951','952'],
+  rare:      ['777','888','999','700','800','555','666','111','222','333'],
+  legendary: ['001','002','003','007','100','200','300','500','999','000']
+};
+
+function randomInt(min, max){
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function generatePhone(rarity){
+  const prefixes = PREFIXES[rarity] || PREFIXES.common;
+  const prefix = prefixes[randomInt(0, prefixes.length - 1)];
+  const a = String(randomInt(0, 999)).padStart(3, '0');
+  const b = String(randomInt(0, 99)).padStart(2, '0');
+  const c = String(randomInt(0, 99)).padStart(2, '0');
+  return `+7 ${prefix} ${a}-${b}-${c}`;
+}
+
+function rollRarity(){
+  const c = state.chances;
+  const total = c.common + c.rare + c.legendary;
+  let r = Math.random() * total;
+  if(r < c.common) return 'common';
+  r -= c.common;
+  if(r < c.rare) return 'rare';
+  return 'legendary';
+}
+
+function generateNumber(){
+  const rarity = rollRarity();
+  const data = RARITY_DATA[rarity];
+  const value = randomInt(data.minVal, data.maxVal);
+  return {
+    id: Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    phone: generatePhone(rarity),
+    rarity,
+    value
+  };
+}
+
+/* ==================== МАГАЗИН ==================== */
+const SHOP_ITEMS = [
+  { id:'basic',   name:'Обычная симка',  priceKey:'basic',   chanceLabel:'70/25/5' },
+  { id:'premium', name:'Премиум симка',  priceKey:'premium', chanceLabel:'40/45/15' },
+  { id:'elite',   name:'Элитная симка',  priceKey:'elite',   chanceLabel:'10/50/40' }
+];
+
+// Для премиум/элитной — временно меняем шансы
+function shopChances(itemId){
+  if(itemId === 'premium') return { common:40, rare:45, legendary:15 };
+  if(itemId === 'elite')   return { common:10, rare:50, legendary:40 };
+  return state.chances;
+}
+
+function buySim(itemId){
+  const item = SHOP_ITEMS.find(i => i.id === itemId);
+  const price = state.shopPrices[item.priceKey];
+  if(state.balance < price){
+    alert('Недостаточно средств!');
+    return;
+  }
+  state.balance -= price;
+
+  // временно подменяем шансы для крутки
+  const saved = state.chances;
+  state.chances = shopChances(itemId);
+  const num = generateNumber();
+  state.chances = saved;
+
+  state.collection.push(num);
+  saveState();
+  showModal(num);
+}
+
+/* ==================== БОНУС ==================== */
+function claimBonus(){
+  const now = Date.now();
+  const cooldown = 30 * 1000;
+  if(now - state.lastBonus < cooldown){
+    const left = Math.ceil((cooldown - (now - state.lastBonus)) / 1000);
+    alert(`Подождите ещё ${left} сек.`);
+    return;
+  }
+  state.lastBonus = now;
+  state.balance += 500;
+  saveState();
+}
+
+/* ==================== МОДАЛКА ==================== */
+function showModal(num){
+  const data = RARITY_DATA[num.rarity];
+  document.getElementById('modalIcon').textContent = data.icon;
+  document.getElementById('modalRarity').textContent = data.label;
+  document.getElementById('modalRarity').style.color = data.color;
+  document.getElementById('modalPhone').textContent = num.phone;
+  document.getElementById('modalPhone').style.color = data.color;
+  document.getElementById('modalValue').textContent = num.value.toLocaleString('ru-RU') + ' ₽';
+  document.getElementById('modal').classList.add('active');
+}
+
+document.getElementById('modalClose').onclick = () => {
+  document.getElementById('modal').classList.remove('active');
+};
+
+/* ==================== РЕНДЕР ==================== */
+function renderBalance(){
+  document.getElementById('balance').textContent = state.balance.toLocaleString('ru-RU');
+}
+
+function renderShop(){
+  const grid = document.getElementById('shopGrid');
+  grid.innerHTML = SHOP_ITEMS.map(item => `
+    <div class="shop-item">
+      <h3>${item.name}</h3>
+      <div class="price">${state.shopPrices[item.priceKey]} ₽</div>
+      <div class="chance">Шансы: ${item.chanceLabel}</div>
+      <button class="btn" data-buy="${item.id}">Купить</button>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('[data-buy]').forEach(btn => {
+    btn.onclick = () => buySim(btn.dataset.buy);
+  });
+}
+
+function renderCollection(){
+  const coll = document.getElementById('collection');
+  const empty = document.getElementById('emptyColl');
+  const count = document.getElementById('collCount');
+
+  count.textContent = state.collection.length ? `(${state.collection.length})` : '';
+
+  if(!state.collection.length){
+    coll.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  coll.innerHTML = state.collection.slice().reverse().map(num => {
+    const data = RARITY_DATA[num.rarity];
+    const cls = num.rarity === 'legendary' ? 'legendary' : num.rarity === 'rare' ? 'rare' : '';
+    return `
+      <div class="num-card ${cls}">
+        <div class="phone">${num.phone}</div>
+        <div class="rarity">${data.label}</div>
+        <div class="price">${num.value.toLocaleString('ru-RU')} ₽</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAdmin(){
+  document.getElementById('adminBalance').value = state.balance;
+  document.getElementById('chanceCommon').value = state.chances.common;
+  document.getElementById('chanceRare').value = state.chances.rare;
+  document.getElementById('chanceLegendary').value = state.chances.legendary;
+
+  const list = document.getElementById('adminNumberList');
+  if(!state.collection.length){
+    list.innerHTML = '<div class="empty" style="padding:14px 0;">Номеров пока нет</div>';
+    return;
+  }
+  list.innerHTML = state.collection.slice().reverse().map(num => `
+    <div class="admin-row">
+      <span>${num.phone}</span>
+      <span style="color:var(--muted); font-size:11px;">${RARITY_DATA[num.rarity].label}</span>
+      <button class="del" data-del="${num.id}">✕</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-del]').forEach(btn => {
+    btn.onclick = () => {
+      state.collection = state.collection.filter(n => n.id !== btn.dataset.del);
+      saveState();
+    };
+  });
+}
+
+function renderAll(){
+  renderBalance();
+  renderShop();
+  renderCollection();
+  renderAdmin();
+}
+
+/* ==================== АДМИН-ДЕЙСТВИЯ ==================== */
+document.getElementById('setBalanceBtn').onclick = () => {
+  const val = parseInt(document.getElementById('adminBalance').value) || 0;
+  state.balance = val;
+  saveState();
+};
+
+document.getElementById('addNumberBtn').onclick = () => {
+  const phone = document.getElementById('adminPhone').value.trim();
+  const rarity = document.getElementById('adminRarity').value;
+  const value = parseInt(document.getElementById('adminValue').value) || 0;
+  if(!phone){ alert('Введите номер'); return; }
+  state.collection.push({
+    id: Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    phone, rarity, value
+  });
+  document.getElementById('adminPhone').value = '';
+  document.getElementById('adminValue').value = '';
+  saveState();
+};
+
+document.getElementById('saveChancesBtn').onclick = () => {
+  const c = parseInt(document.getElementById('chanceCommon').value) || 0;
+  const r = parseInt(document.getElementById('chanceRare').value) || 0;
+  const l = parseInt(document.getElementById('chanceLegendary').value) || 0;
+  if(c + r + l !== 100){
+    alert('Сумма шансов должна быть 100%');
+    return;
+  }
+  state.chances = { common:c, rare:r, legendary:l };
+  saveState();
+};
+
+document.getElementById('resetBtn').onclick = () => {
+  if(confirm('Сбросить весь прогресс?')){
+    state = JSON.parse(JSON.stringify(defaultState));
+    saveState();
+  }
+};
+
+/* ==================== ТАБЫ ==================== */
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  };
+});
+
+document.getElementById('bonusBtn').onclick = claimBonus;
+
+/* ==================== СТАРТ ==================== */
+renderAll();
+
+// Инициализация Telegram
+if(window.Telegram && Telegram.WebApp){
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+}
+</script>
+</body>
+</html>
