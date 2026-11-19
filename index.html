@@ -23,6 +23,7 @@
     --purple-gradient: linear-gradient(135deg, #b06cff, #7b3bff);
     --green: #3ddc84;
     --red: #ff5c5c;
+    --star: #ffcc00;
     --radius: 20px;
   }
 
@@ -53,13 +54,16 @@
   .logo { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
   .logo span { background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   
-  .balance-pill {
+  .header-stats { display: flex; gap: 8px; }
+  .balance-pill, .stars-pill {
     background: var(--surface); border: 1px solid var(--border);
-    padding: 8px 16px; border-radius: 100px; display: flex; align-items: center; gap: 6px;
-    font-weight: 700; font-size: 16px; color: var(--gold);
+    padding: 8px 14px; border-radius: 100px; display: flex; align-items: center; gap: 6px;
+    font-weight: 700; font-size: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
   }
-  .balance-pill small { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .balance-pill { color: var(--gold); }
+  .stars-pill { color: var(--star); background: rgba(255, 204, 0, 0.1); border-color: rgba(255, 204, 0, 0.3); }
+  .balance-pill small, .stars-pill small { color: var(--muted); font-weight: 500; font-size: 11px; }
 
   main { padding: 20px; max-width: 600px; margin: 0 auto; }
 
@@ -86,6 +90,7 @@
   .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
   .btn-primary { background: var(--accent-gradient); color: #fff; box-shadow: 0 4px 15px rgba(91, 140, 255, 0.4); }
   .btn-gold { background: var(--gold-gradient); color: #1a1d27; box-shadow: 0 4px 15px rgba(255, 210, 74, 0.3); }
+  .btn-star { background: linear-gradient(135deg, #ffcc00, #ff9900); color: #1a1d27; box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3); }
   .btn-secondary { background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); }
   .btn-danger { background: rgba(255, 92, 92, 0.15); color: var(--red); border: 1px solid rgba(255, 92, 92, 0.3); }
 
@@ -105,6 +110,31 @@
     font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit;
   }
   .shop-btn:active { background: var(--accent); }
+
+  /* UPGRADES */
+  .upgrade-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .upgrade-item {
+    background: rgba(0,0,0,0.2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .upgrade-icon { font-size: 24px; margin-right: 12px; }
+  .upgrade-info h3 { margin: 0 0 4px 0; font-size: 14px; }
+  .upgrade-desc { font-size: 11px; color: var(--muted); }
+  .upgrade-price { font-size: 14px; font-weight: 700; color: var(--star); display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+  .upgrade-btn {
+    padding: 8px 12px; border-radius: 8px; border: none; background: var(--star); color: #1a1d27;
+    font-weight: 700; cursor: pointer; transition: 0.2s; font-family: inherit;
+  }
+  .upgrade-btn:active { transform: scale(0.95); }
+
+  /* ACTIVE EFFECTS */
+  .effect-bar {
+    background: linear-gradient(90deg, rgba(255, 204, 0, 0.2), rgba(255, 204, 0, 0.05));
+    border: 1px solid rgba(255, 204, 0, 0.3); border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; font-weight: 600;
+  }
+  .effect-timer { color: var(--star); font-weight: 800; }
 
   /* COLLECTION GRID */
   .collection { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
@@ -208,14 +238,21 @@
 
 <header>
   <div class="logo">📱 <span>SIM Collector</span></div>
-  <div class="balance-pill">
-    <small>₽</small> <span id="balance">0</span>
+  <div class="header-stats">
+    <div class="balance-pill">
+      <small>₽</small> <span id="balance">0</span>
+    </div>
+    <div class="stars-pill">
+      <small>⭐</small> <span id="stars">100</span>
+    </div>
   </div>
 </header>
 
 <main>
   <!-- МАГАЗИН -->
   <div class="tab active" id="tab-shop">
+    <div id="activeEffects"></div>
+
     <div class="card">
       <div class="card-title">Магазин симок</div>
       <div class="shop-grid" id="shopGrid"></div>
@@ -234,6 +271,22 @@
       <div class="card-title">Моя коллекция <span id="collCount" style="color:var(--muted); font-weight:500; font-size:14px;"></span></div>
       <div class="collection" id="collection"></div>
       <div class="empty" id="emptyColl">У вас пока нет номеров.<br>Купите первую симку в магазине!</div>
+    </div>
+  </div>
+
+  <!-- УЛУЧШЕНИЯ (STARS SHOP) -->
+  <div class="tab" id="tab-upgrades">
+    <div class="card">
+      <div class="card-title">✨ Улучшения за звёзды</div>
+      <div class="upgrade-grid" id="upgradeGrid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🎟️ Активация промокода</div>
+      <div class="field">
+        <input type="text" id="promoInput" placeholder="Введите промокод" style="text-transform: uppercase;">
+        <button class="btn btn-secondary" style="margin-top: 8px; padding: 10px;" id="activatePromoBtn">Активировать</button>
+      </div>
+      <div class="hint">Промокоды публикуются в нашем Telegram-канале. Следите за обновлениями!</div>
     </div>
   </div>
 
@@ -293,7 +346,21 @@
           <input type="number" id="chanceLegendary" placeholder="Лег %" value="2">
         </div>
         <button class="btn btn-secondary" style="margin-top:8px; padding: 10px;" id="saveChancesBtn">Сохранить шансы</button>
-        <div class="hint">Сумма всех шансов должна быть строго 100%.</div>
+      </div>
+
+      <div class="field">
+        <label>Выдать улучшение себе (x2 удача)</label>
+        <button class="btn btn-secondary" style="padding: 10px;" id="adminGiveLuckBtn">Выдать x2 удача на 1 час</button>
+      </div>
+
+      <div class="field">
+        <label>Создать промокод</label>
+        <input type="text" id="adminPromoCode" placeholder="КОД (например, START)">
+        <input type="number" id="adminPromoAmount" placeholder="Сумма ₽" style="margin-top:8px;">
+        <input type="number" id="adminPromoLimit" placeholder="Лимит активаций" value="10" style="margin-top:8px;">
+        <button class="btn btn-secondary" style="margin-top:8px; padding: 10px;" id="createPromoBtn">Создать промокод</button>
+        
+        <div class="admin-list" id="adminPromoList" style="margin-top: 10px;"></div>
       </div>
 
       <div class="field">
@@ -320,27 +387,30 @@
 <nav>
   <button class="active" data-tab="shop"><span class="icon">🛒</span>Магазин</button>
   <button data-tab="collection"><span class="icon">💼</span>Коллекция</button>
+  <button data-tab="upgrades"><span class="icon">✨</span>Улучшения</button>
   <button data-tab="profile"><span class="icon">👤</span>Профиль</button>
   <button data-tab="admin" id="navAdminBtn" style="display:none;"><span class="icon">⚙️</span>Админ</button>
 </nav>
 
 <script>
 /* ==================== НАСТРОЙКИ ==================== */
-// Ваш Telegram ID уже вписан:
 const ADMIN_ID = 2037977300; 
 
 /* ==================== ДАННЫЕ ==================== */
-const STORAGE_KEY = 'simcard_game_v3';
+const STORAGE_KEY = 'simcard_game_v4';
 
 const defaultState = {
   balance: 1000,
+  stars: 100,
   collection: [],
-  chances: { common: 85, rare: 13, legendary: 2 }, // Уменьшенные шансы
+  chances: { common: 85, rare: 13, legendary: 2 },
   shopPrices: { basic: 100, premium: 500, elite: 2000 },
   lastBonusDate: '',
   streak: 0,
   isAdmin: false,
-  userId: null
+  userId: null,
+  luckUntil: 0,
+  promos: {} // { КОД: { amount: 500, limit: 10, used: 0 } }
 };
 
 let state = loadState();
@@ -348,7 +418,18 @@ let state = loadState();
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw) return Object.assign({}, defaultState, JSON.parse(raw));
+    if(raw){
+      const parsed = JSON.parse(raw);
+      // Миграция старых промокодов (если были просто числа)
+      if (parsed.promos) {
+        for (let code in parsed.promos) {
+          if (typeof parsed.promos[code] === 'number') {
+            parsed.promos[code] = { amount: parsed.promos[code], limit: 1, used: 0 };
+          }
+        }
+      }
+      return Object.assign({}, defaultState, parsed);
+    }
   }catch(e){}
   return JSON.parse(JSON.stringify(defaultState));
 }
@@ -383,7 +464,13 @@ function generatePhone(rarity){
 }
 
 function rollRarity(){
-  const c = state.chances;
+  let c = { ...state.chances };
+  
+  if (Date.now() < state.luckUntil) {
+    c.rare *= 2;
+    c.legendary *= 2;
+  }
+  
   const total = c.common + c.rare + c.legendary;
   let r = Math.random() * total;
   if(r < c.common) return 'common';
@@ -433,6 +520,42 @@ function buySim(itemId){
   showModal(num);
 }
 
+/* ==================== УЛУЧШЕНИЯ ==================== */
+const UPGRADES = [
+  { id:'luck', name:'x2 Удача', icon:'🍀', desc:'Удваивает шансы на редкие номера на 1 час', price: 50 },
+  { id:'money', name:'+5000 ₽', icon:'💰', desc:'Мгновенно добавляет 5000 ₽ на баланс', price: 20 },
+  { id:'legend', name:'Легендарный номер', icon:'👑', desc:'Гарантированно выдает легендарный номер', price: 200 }
+];
+
+function buyUpgrade(id) {
+  const upg = UPGRADES.find(u => u.id === id);
+  if (state.stars < upg.price) {
+    alert('Недостаточно звёзд!');
+    return;
+  }
+  
+  state.stars -= upg.price;
+  
+  if (id === 'luck') {
+    state.luckUntil = Date.now() + 60 * 60 * 1000;
+    alert('🍀 Удача x2 активирована на 1 час!');
+  } else if (id === 'money') {
+    state.balance += 5000;
+    alert('💰 +5000 ₽ добавлено на баланс!');
+  } else if (id === 'legend') {
+    const num = {
+      id: Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      phone: generatePhone('legendary'),
+      rarity: 'legendary',
+      value: randomInt(5000, 50000)
+    };
+    state.collection.push(num);
+    showModal(num);
+  }
+  
+  saveState();
+}
+
 /* ==================== ПРОДАЖА ==================== */
 function sellNumber(id) {
   const index = state.collection.findIndex(n => n.id === id);
@@ -465,19 +588,27 @@ function claimDailyBonus() {
   alert(`🎉 Бонус получен! +500 ₽\nСтрик: ${state.streak} дн.`);
 }
 
-function updateBonusUI() {
-  const btn = document.getElementById('bonusBtn');
-  const hint = document.getElementById('bonusHint');
-  const today = new Date().toISOString().split('T')[0];
-
-  if (state.lastBonusDate === today) {
-    btn.disabled = true;
-    btn.textContent = '✅ Уже получено';
-    hint.innerHTML = `<b>Стрик: ${state.streak} дн.</b><br>Ждем вас завтра!`;
+/* ==================== ПРОМОКОДЫ ==================== */
+function activatePromo() {
+  const code = document.getElementById('promoInput').value.trim().toUpperCase();
+  if (!code) return;
+  
+  const promo = state.promos[code];
+  
+  if (promo && promo.used < promo.limit) {
+    state.balance += promo.amount;
+    promo.used += 1;
+    
+    // Если лимит исчерпан — удаляем
+    if (promo.used >= promo.limit) {
+      delete state.promos[code];
+    }
+    
+    document.getElementById('promoInput').value = '';
+    saveState();
+    alert(`🎟️ Промокод активирован! +${promo.amount} ₽`);
   } else {
-    btn.disabled = false;
-    btn.textContent = '🎁 Забрать +500 ₽';
-    hint.innerHTML = `<b>Стрик: ${state.streak} дн.</b><br>Заходите каждый день!`;
+    alert('Неверный, использованный или исчерпанный промокод.');
   }
 }
 
@@ -504,6 +635,7 @@ document.getElementById('modalClose').onclick = () => {
 
 function renderBalance(){
   document.getElementById('balance').textContent = state.balance.toLocaleString('ru-RU');
+  document.getElementById('stars').textContent = state.stars;
 }
 
 function renderShop(){
@@ -524,6 +656,46 @@ function renderShop(){
   grid.querySelectorAll('[data-buy]').forEach(btn => {
     btn.onclick = () => buySim(btn.dataset.buy);
   });
+}
+
+function renderUpgrades() {
+  const grid = document.getElementById('upgradeGrid');
+  grid.innerHTML = UPGRADES.map(u => `
+    <div class="upgrade-item">
+      <div style="display:flex; align-items:center;">
+        <div class="upgrade-icon">${u.icon}</div>
+        <div class="upgrade-info">
+          <h3>${u.name}</h3>
+          <div class="upgrade-desc">${u.desc}</div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div class="upgrade-price">${u.price} ⭐</div>
+        <button class="upgrade-btn" data-upg="${u.id}">Купить</button>
+      </div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('[data-upg]').forEach(btn => {
+    btn.onclick = () => buyUpgrade(btn.dataset.upg);
+  });
+}
+
+function renderEffects() {
+  const bar = document.getElementById('activeEffects');
+  let html = '';
+  
+  if (Date.now() < state.luckUntil) {
+    const left = Math.ceil((state.luckUntil - Date.now()) / 60000);
+    html += `
+      <div class="effect-bar">
+        <span>🍀 Удача x2 активна</span>
+        <span class="effect-timer">${left} мин.</span>
+      </div>
+    `;
+  }
+  
+  bar.innerHTML = html;
 }
 
 function renderCollection(){
@@ -574,26 +746,56 @@ function renderAdmin(){
   const list = document.getElementById('adminNumberList');
   if(!state.collection.length){
     list.innerHTML = '<div class="empty" style="padding:14px 0; font-size:12px;">Список пуст</div>';
-    return;
-  }
-  list.innerHTML = state.collection.slice().reverse().map(num => `
-    <div class="admin-row">
-      <span>${num.phone}</span>
-      <button class="admin-del" data-del="${num.id}">✕</button>
-    </div>
-  `).join('');
+  } else {
+    list.innerHTML = state.collection.slice().reverse().map(num => `
+      <div class="admin-row">
+        <span>${num.phone}</span>
+        <button class="admin-del" data-del="${num.id}">✕</button>
+      </div>
+    `).join('');
 
-  list.querySelectorAll('[data-del]').forEach(btn => {
-    btn.onclick = () => {
-      state.collection = state.collection.filter(n => n.id !== btn.dataset.del);
-      saveState();
-    };
-  });
+    list.querySelectorAll('[data-del]').forEach(btn => {
+      btn.onclick = () => {
+        state.collection = state.collection.filter(n => n.id !== btn.dataset.del);
+        saveState();
+      };
+    });
+  }
+
+  // Рендер промокодов
+  const promoList = document.getElementById('adminPromoList');
+  const keys = Object.keys(state.promos);
+  if (!keys.length) {
+    promoList.innerHTML = '<div class="empty" style="padding:10px 0; font-size:12px;">Нет активных промокодов</div>';
+  } else {
+    promoList.innerHTML = keys.map(code => {
+      const p = state.promos[code];
+      return `
+        <div class="admin-row">
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <span style="font-weight:700;">${code}</span>
+            <span style="font-size:11px; color:var(--muted);">Использовано: ${p.used} / ${p.limit}</span>
+          </div>
+          <span style="color: var(--gold); font-weight: 700;">${p.amount} ₽</span>
+          <button class="admin-del" data-delpromo="${code}">✕</button>
+        </div>
+      `;
+    }).join('');
+
+    promoList.querySelectorAll('[data-delpromo]').forEach(btn => {
+      btn.onclick = () => {
+        delete state.promos[btn.dataset.delpromo];
+        saveState();
+      };
+    });
+  }
 }
 
 function renderAll(){
   renderBalance();
   renderShop();
+  renderUpgrades();
+  renderEffects();
   renderCollection();
   renderProfile();
   updateBonusUI();
@@ -629,6 +831,31 @@ document.getElementById('saveChancesBtn').onclick = () => {
   saveState();
 };
 
+document.getElementById('adminGiveLuckBtn').onclick = () => {
+  if (!state.isAdmin) return;
+  state.luckUntil = Date.now() + 60 * 60 * 1000;
+  saveState();
+  alert('🍀 Удача x2 выдана на 1 час!');
+};
+
+document.getElementById('createPromoBtn').onclick = () => {
+  if (!state.isAdmin) return;
+  const code = document.getElementById('adminPromoCode').value.trim().toUpperCase();
+  const amount = parseInt(document.getElementById('adminPromoAmount').value) || 0;
+  const limit = parseInt(document.getElementById('adminPromoLimit').value) || 1;
+  
+  if (!code) { alert('Введите код'); return; }
+  if (amount <= 0) { alert('Введите сумму больше 0'); return; }
+  if (limit <= 0) { alert('Лимит должен быть больше 0'); return; }
+  
+  state.promos[code] = { amount, limit, used: 0 };
+  document.getElementById('adminPromoCode').value = '';
+  document.getElementById('adminPromoAmount').value = '';
+  document.getElementById('adminPromoLimit').value = '10';
+  saveState();
+  alert(`Промокод ${code} на ${amount} ₽ (лимит: ${limit}) создан!`);
+};
+
 document.getElementById('resetBtn').onclick = () => {
   if (!state.isAdmin) return;
   if(confirm('Сбросить весь прогресс?')){
@@ -656,8 +883,25 @@ function setupTabs() {
 }
 
 document.getElementById('bonusBtn').onclick = claimDailyBonus;
+document.getElementById('activatePromoBtn').onclick = activatePromo;
 
 /* ==================== ИНИЦИАЛИЗАЦИЯ ==================== */
+function updateBonusUI() {
+  const btn = document.getElementById('bonusBtn');
+  const hint = document.getElementById('bonusHint');
+  const today = new Date().toISOString().split('T')[0];
+
+  if (state.lastBonusDate === today) {
+    btn.disabled = true;
+    btn.textContent = '✅ Уже получено';
+    hint.innerHTML = `<b>Стрик: ${state.streak} дн.</b><br>Ждем вас завтра!`;
+  } else {
+    btn.disabled = false;
+    btn.textContent = '🎁 Забрать +500 ₽';
+    hint.innerHTML = `<b>Стрик: ${state.streak} дн.</b><br>Заходите каждый день!`;
+  }
+}
+
 function initApp() {
   if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
     const user = Telegram.WebApp.initDataUnsafe.user;
@@ -674,7 +918,6 @@ function initApp() {
     Telegram.WebApp.ready();
     Telegram.WebApp.expand();
   } else {
-    // Если открыто в браузере (не в ТГ) - даем права админа для удобства разработки
     state.userId = 'Web Browser';
     if (ADMIN_ID) { 
        state.isAdmin = true;
@@ -682,9 +925,11 @@ function initApp() {
     }
   }
   
-  saveState(); // Сохраняем данные юзера
+  saveState();
   setupTabs();
   renderAll();
+  
+  setInterval(renderEffects, 60000);
 }
 
 initApp();
