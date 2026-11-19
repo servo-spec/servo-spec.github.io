@@ -40,6 +40,7 @@
   .btn:disabled{opacity:.4; cursor:not-allowed;}
   .btn.secondary{background:var(--card2); color:var(--text);}
   .btn.gold{background:linear-gradient(135deg,#ffd24a,#ff9f1a); color:#1a1d27;}
+  .btn.green{background:var(--green); color:#1a1d27;}
 
   .shop-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
   .shop-item{
@@ -63,6 +64,14 @@
   .num-card .price{font-size:12px; color:var(--gold); margin-top:6px;}
   .num-card.rare .rarity{color:var(--purple);}
   .num-card.legendary .rarity{color:var(--gold);}
+  
+  /* Кнопка продажи в коллекции */
+  .sell-btn {
+    margin-top: 8px; width: 100%; padding: 6px; font-size: 12px; border-radius: 8px;
+    background: var(--card); border: 1px solid var(--red); color: var(--red);
+    cursor: pointer; transition: 0.2s;
+  }
+  .sell-btn:active { background: var(--red); color: #fff; }
 
   .empty{text-align:center; color:var(--muted); padding:30px 0; font-size:14px;}
 
@@ -136,8 +145,8 @@
       <div class="hint">Каждая симка даёт случайный номер. Чем дороже — тем выше шанс на редкий номер.</div>
     </div>
     <div class="card" style="text-align:center;">
-      <button class="btn gold" id="bonusBtn">🎁 Получить бонус</button>
-      <div class="hint">Бесплатные деньги раз в 30 секунд (для теста).</div>
+      <button class="btn gold" id="bonusBtn">🎁 Получить ежедневный бонус</button>
+      <div class="hint" id="bonusHint">Заходите каждый день, чтобы получить +500₽. Не пропускайте!</div>
     </div>
   </div>
 
@@ -185,7 +194,7 @@
       </div>
 
       <div class="field">
-        <label>Список номеров в пуле (генерируется автоматически)</label>
+        <label>Список номеров в пуле</label>
         <div class="admin-list" id="adminNumberList"></div>
       </div>
 
@@ -208,20 +217,25 @@
 <nav>
   <button class="active" data-tab="shop"><span class="icon">🛒</span>Магазин</button>
   <button data-tab="collection"><span class="icon">📚</span>Коллекция</button>
-  <button data-tab="admin"><span class="icon">⚙️</span>Админ</button>
+  <button data-tab="admin" id="navAdminBtn" style="display:none;"><span class="icon">⚙️</span>Админ</button>
 </nav>
 
 <script>
+/* ==================== НАСТРОЙКИ ==================== */
+// ВСТАВЬТЕ СЮДА ВАШ TELEGRAM ID (узнать можно у @userinfobot)
+const ADMIN_ID = 2037977300; // <--- ЗАМЕНИТЕ ЭТО ЧИСЛО
+
 /* ==================== ДАННЫЕ ==================== */
-const STORAGE_KEY = 'simcard_game_v1';
+const STORAGE_KEY = 'simcard_game_v2';
 
 const defaultState = {
   balance: 1000,
   collection: [], // {phone, rarity, value, id}
   chances: { common: 70, rare: 25, legendary: 5 },
   shopPrices: { basic: 100, premium: 500, elite: 2000 },
-  lastBonus: 0,
-  isAdmin: true // для теста; в проде проверять по Telegram ID
+  lastBonusDate: '', // Храним строку даты 'YYYY-MM-DD'
+  streak: 0,         // Дней подряд
+  isAdmin: false     // Определяется при запуске
 };
 
 let state = loadState();
@@ -246,7 +260,6 @@ const RARITY_DATA = {
   legendary: { label:'Легендарный', icon:'👑', minVal:5000, maxVal:50000, color:'var(--gold)' }
 };
 
-// Красивые префиксы для редкости
 const PREFIXES = {
   common:    ['900','901','902','903','904','905','906','908','909','950','951','952'],
   rare:      ['777','888','999','700','800','555','666','111','222','333'],
@@ -295,7 +308,6 @@ const SHOP_ITEMS = [
   { id:'elite',   name:'Элитная симка',  priceKey:'elite',   chanceLabel:'10/50/40' }
 ];
 
-// Для премиум/элитной — временно меняем шансы
 function shopChances(itemId){
   if(itemId === 'premium') return { common:40, rare:45, legendary:15 };
   if(itemId === 'elite')   return { common:10, rare:50, legendary:40 };
@@ -311,7 +323,6 @@ function buySim(itemId){
   }
   state.balance -= price;
 
-  // временно подменяем шансы для крутки
   const saved = state.chances;
   state.chances = shopChances(itemId);
   const num = generateNumber();
@@ -322,18 +333,64 @@ function buySim(itemId){
   showModal(num);
 }
 
-/* ==================== БОНУС ==================== */
-function claimBonus(){
-  const now = Date.now();
-  const cooldown = 30 * 1000;
-  if(now - state.lastBonus < cooldown){
-    const left = Math.ceil((cooldown - (now - state.lastBonus)) / 1000);
-    alert(`Подождите ещё ${left} сек.`);
+/* ==================== ПРОДАЖА СИМКИ ==================== */
+function sellNumber(id) {
+  const index = state.collection.findIndex(n => n.id === id);
+  if (index === -1) return;
+  
+  const num = state.collection[index];
+  if (!confirm(`Вы уверены, что хотите продать номер ${num.phone} за ${num.value.toLocaleString('ru-RU')} ₽?`)) return;
+
+  state.balance += num.value;
+  state.collection.splice(index, 1); // Удаляем из коллекции
+  saveState();
+}
+
+/* ==================== ЕЖЕДНЕВНЫЙ БОНУС (СТРИК) ==================== */
+function claimDailyBonus() {
+  const today = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD'
+  
+  if (state.lastBonusDate === today) {
+    alert('Вы уже получали бонус сегодня. Возвращайтесь завтра!');
     return;
   }
-  state.lastBonus = now;
+
+  // Проверка на непрерывность (если вчера заходили)
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+  if (state.lastBonusDate === yesterdayStr) {
+    state.streak += 1;
+  } else {
+    state.streak = 1; // Сброс стрика, если пропустили день
+  }
+
+  // Ограничение максимум 7 дней
+  if (state.streak > 7) state.streak = 7;
+
   state.balance += 500;
+  state.lastBonusDate = today;
+  
   saveState();
+  alert(`🎉 Бонус получен! +500 ₽\nВаш стрик: ${state.streak} дн.`);
+  updateBonusUI();
+}
+
+function updateBonusUI() {
+  const btn = document.getElementById('bonusBtn');
+  const hint = document.getElementById('bonusHint');
+  const today = new Date().toISOString().split('T')[0];
+
+  if (state.lastBonusDate === today) {
+    btn.disabled = true;
+    btn.textContent = '✅ Бонус получен сегодня';
+    hint.textContent = `Стрик: ${state.streak} дн. Приходите завтра!`;
+  } else {
+    btn.disabled = false;
+    btn.textContent = '🎁 Получить бонус +500 ₽';
+    hint.textContent = `Стрик: ${state.streak} дн. Заходите каждый день, чтобы не потерять прогресс!`;
+  }
 }
 
 /* ==================== МОДАЛКА ==================== */
@@ -395,12 +452,21 @@ function renderCollection(){
         <div class="phone">${num.phone}</div>
         <div class="rarity">${data.label}</div>
         <div class="price">${num.value.toLocaleString('ru-RU')} ₽</div>
+        <button class="sell-btn" data-sell="${num.id}">Продать за ${num.value.toLocaleString('ru-RU')} ₽</button>
       </div>
     `;
   }).join('');
+
+  // Привязка кнопок продажи
+  coll.querySelectorAll('[data-sell]').forEach(btn => {
+    btn.onclick = () => sellNumber(btn.dataset.sell);
+  });
 }
 
 function renderAdmin(){
+  // Если не админ — не рендерим вообще
+  if (!state.isAdmin) return; 
+
   document.getElementById('adminBalance').value = state.balance;
   document.getElementById('chanceCommon').value = state.chances.common;
   document.getElementById('chanceRare').value = state.chances.rare;
@@ -431,17 +497,20 @@ function renderAll(){
   renderBalance();
   renderShop();
   renderCollection();
-  renderAdmin();
+  updateBonusUI();
+  if (state.isAdmin) renderAdmin();
 }
 
 /* ==================== АДМИН-ДЕЙСТВИЯ ==================== */
 document.getElementById('setBalanceBtn').onclick = () => {
+  if (!state.isAdmin) return;
   const val = parseInt(document.getElementById('adminBalance').value) || 0;
   state.balance = val;
   saveState();
 };
 
 document.getElementById('addNumberBtn').onclick = () => {
+  if (!state.isAdmin) return;
   const phone = document.getElementById('adminPhone').value.trim();
   const rarity = document.getElementById('adminRarity').value;
   const value = parseInt(document.getElementById('adminValue').value) || 0;
@@ -456,6 +525,7 @@ document.getElementById('addNumberBtn').onclick = () => {
 };
 
 document.getElementById('saveChancesBtn').onclick = () => {
+  if (!state.isAdmin) return;
   const c = parseInt(document.getElementById('chanceCommon').value) || 0;
   const r = parseInt(document.getElementById('chanceRare').value) || 0;
   const l = parseInt(document.getElementById('chanceLegendary').value) || 0;
@@ -468,14 +538,18 @@ document.getElementById('saveChancesBtn').onclick = () => {
 };
 
 document.getElementById('resetBtn').onclick = () => {
+  if (!state.isAdmin) return;
   if(confirm('Сбросить весь прогресс?')){
     state = JSON.parse(JSON.stringify(defaultState));
+    state.isAdmin = true; // Сохраняем права админа
     saveState();
   }
 };
 
 /* ==================== ТАБЫ ==================== */
 document.querySelectorAll('nav button').forEach(btn => {
+  if (btn.id === 'navAdminBtn' && !state.isAdmin) return; // Скрываем вкладку для не-админов
+  
   btn.onclick = () => {
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -484,16 +558,48 @@ document.querySelectorAll('nav button').forEach(btn => {
   };
 });
 
-document.getElementById('bonusBtn').onclick = claimBonus;
+document.getElementById('bonusBtn').onclick = claimDailyBonus;
 
-/* ==================== СТАРТ ==================== */
-renderAll();
-
-// Инициализация Telegram
-if(window.Telegram && Telegram.WebApp){
-  Telegram.WebApp.ready();
-  Telegram.WebApp.expand();
+/* ==================== ИНИЦИАЛИЗАЦИЯ TELEGRAM И ПРАВ ==================== */
+function initApp() {
+  // Проверяем, есть ли данные от Telegram
+  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+    const user = Telegram.WebApp.initDataUnsafe.user;
+    
+    // Проверка на админа
+    if (user.id === ADMIN_ID) {
+      state.isAdmin = true;
+      // Показываем кнопку админа
+      document.getElementById('navAdminBtn').style.display = 'flex';
+      // Привязываем клик к вкладке админки
+      document.getElementById('navAdminBtn').onclick = () => {
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        document.getElementById('navAdminBtn').classList.add('active');
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-admin').classList.add('active');
+      };
+    } else {
+      state.isAdmin = false;
+      document.getElementById('navAdminBtn').style.display = 'none';
+    }
+    
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+  } else {
+    // Если открыто вне Telegram (например, в браузере на ПК),
+    // разрешаем админку для теста. В продакшене лучше запретить.
+    console.log("Открыто вне Telegram. Проверьте ADMIN_ID в коде.");
+    if (ADMIN_ID === 123456789) {
+       // Если ID не заменен, показываем админку для теста
+       state.isAdmin = true;
+       document.getElementById('navAdminBtn').style.display = 'flex';
+    }
+  }
+  
+  renderAll();
 }
+
+initApp();
 </script>
 </body>
 </html>
