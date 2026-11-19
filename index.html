@@ -2,137 +2,214 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>SimCard Collector</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
   :root{
-    --bg:#0f1117; --card:#1a1d27; --card2:#232734; --text:#e8eaf0;
-    --muted:#8b90a0; --accent:#4f8cff; --gold:#ffd24a; --purple:#b06cff;
-    --green:#3ddc84; --red:#ff5c5c;
+    --bg: #0a0b10;
+    --surface: rgba(255, 255, 255, 0.05);
+    --surface-hover: rgba(255, 255, 255, 0.08);
+    --border: rgba(255, 255, 255, 0.1);
+    --text: #ffffff;
+    --muted: #8b92a5;
+    --accent: #5b8cff;
+    --accent-gradient: linear-gradient(135deg, #5b8cff, #3b66f5);
+    --gold: #ffd24a;
+    --gold-gradient: linear-gradient(135deg, #ffd24a, #ff9f1a);
+    --purple: #b06cff;
+    --purple-gradient: linear-gradient(135deg, #b06cff, #7b3bff);
+    --green: #3ddc84;
+    --red: #ff5c5c;
+    --radius: 20px;
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  body{
-    margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    background:var(--bg); color:var(--text); padding-bottom:80px;
-    min-height:100vh;
-  }
-  header{
-    position:sticky; top:0; z-index:10; background:rgba(15,17,23,.95);
-    backdrop-filter:blur(10px); padding:14px 16px; display:flex;
-    justify-content:space-between; align-items:center; border-bottom:1px solid #232734;
-  }
-  .balance{font-size:20px; font-weight:700; color:var(--gold);}
-  .balance small{color:var(--muted); font-size:11px; font-weight:400; display:block;}
-  .title{font-size:17px; font-weight:700;}
-  main{padding:16px; max-width:600px; margin:0 auto;}
 
-  .card{
-    background:var(--card); border-radius:16px; padding:16px; margin-bottom:14px;
-    border:1px solid #232734;
-  }
-  .btn{
-    width:100%; padding:14px; border-radius:12px; border:none; cursor:pointer;
-    font-size:15px; font-weight:600; background:var(--accent); color:#fff;
-    transition:transform .1s, opacity .2s;
-  }
-  .btn:active{transform:scale(.97);}
-  .btn:disabled{opacity:.4; cursor:not-allowed;}
-  .btn.secondary{background:var(--card2); color:var(--text);}
-  .btn.gold{background:linear-gradient(135deg,#ffd24a,#ff9f1a); color:#1a1d27;}
-  .btn.green{background:var(--green); color:#1a1d27;}
-
-  .shop-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-  .shop-item{
-    background:var(--card2); border-radius:12px; padding:12px; text-align:center;
-    border:1px solid #2e3342;
-  }
-  .shop-item h3{margin:0 0 4px; font-size:14px;}
-  .shop-item .price{color:var(--gold); font-weight:700; font-size:14px; margin-bottom:8px;}
-  .shop-item .chance{color:var(--muted); font-size:11px; margin-bottom:10px;}
-  .shop-item button{width:100%; padding:9px; font-size:13px;}
-
-  .collection{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;}
-  .num-card{
-    background:var(--card2); border-radius:12px; padding:12px; position:relative;
-    border:1px solid #2e3342; overflow:hidden;
-  }
-  .num-card.rare{background:linear-gradient(135deg,#2a1f45,#1f1a30); border-color:var(--purple);}
-  .num-card.legendary{background:linear-gradient(135deg,#3d3418,#2a2410); border-color:var(--gold);}
-  .num-card .phone{font-size:15px; font-weight:700; letter-spacing:.5px; margin-bottom:6px;}
-  .num-card .rarity{font-size:11px; text-transform:uppercase; letter-spacing:1px;}
-  .num-card .price{font-size:12px; color:var(--gold); margin-top:6px;}
-  .num-card.rare .rarity{color:var(--purple);}
-  .num-card.legendary .rarity{color:var(--gold);}
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   
-  /* Кнопка продажи в коллекции */
+  body{
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg);
+    background-image: 
+      radial-gradient(circle at 15% 50%, rgba(91, 140, 255, 0.15), transparent 25%),
+      radial-gradient(circle at 85% 30%, rgba(176, 108, 255, 0.15), transparent 25%);
+    background-attachment: fixed;
+    color: var(--text);
+    padding-bottom: 90px;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header{
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(10, 11, 16, 0.7);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    padding: 16px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+  .logo span { background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  
+  .balance-pill {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 8px 16px; border-radius: 100px; display: flex; align-items: center; gap: 6px;
+    font-weight: 700; font-size: 16px; color: var(--gold);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  .balance-pill small { color: var(--muted); font-weight: 500; font-size: 12px; }
+
+  main { padding: 20px; max-width: 600px; margin: 0 auto; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .card-title { font-size: 16px; font-weight: 700; margin: 0 0 16px 0; display: flex; justify-content: space-between; align-items: center; }
+
+  /* BUTTONS */
+  .btn {
+    width: 100%; padding: 16px; border-radius: 14px; border: none; cursor: pointer;
+    font-size: 15px; font-weight: 700; font-family: inherit;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; justify-content: center; align-items: center; gap: 8px;
+  }
+  .btn:active { transform: scale(0.96); opacity: 0.9; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-primary { background: var(--accent-gradient); color: #fff; box-shadow: 0 4px 15px rgba(91, 140, 255, 0.4); }
+  .btn-gold { background: var(--gold-gradient); color: #1a1d27; box-shadow: 0 4px 15px rgba(255, 210, 74, 0.3); }
+  .btn-secondary { background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); }
+  .btn-danger { background: rgba(255, 92, 92, 0.15); color: var(--red); border: 1px solid rgba(255, 92, 92, 0.3); }
+
+  /* SHOP GRID */
+  .shop-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .shop-item {
+    background: rgba(0,0,0,0.2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center;
+    transition: 0.2s;
+  }
+  .shop-item:hover { background: rgba(255,255,255,0.05); }
+  .shop-info h3 { margin: 0 0 4px 0; font-size: 15px; }
+  .shop-chance { font-size: 12px; color: var(--muted); }
+  .shop-price { font-size: 16px; font-weight: 700; color: var(--gold); margin-bottom: 8px; }
+  .shop-btn {
+    padding: 10px 16px; border-radius: 10px; border: none; background: var(--surface-hover); color: #fff;
+    font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit;
+  }
+  .shop-btn:active { background: var(--accent); }
+
+  /* COLLECTION GRID */
+  .collection { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .num-card {
+    background: rgba(0,0,0,0.2); border-radius: 16px; padding: 14px; position: relative;
+    border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden;
+  }
+  .num-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--muted); opacity: 0.5;
+  }
+  .num-card.common::before { background: #5b8cff; }
+  .num-card.rare::before { background: var(--purple-gradient); opacity: 1; }
+  .num-card.legendary::before { background: var(--gold-gradient); opacity: 1; }
+  
+  .num-card.rare { background: linear-gradient(180deg, rgba(176, 108, 255, 0.1), rgba(0,0,0,0.2)); border-color: rgba(176, 108, 255, 0.3); }
+  .num-card.legendary { background: linear-gradient(180deg, rgba(255, 210, 74, 0.15), rgba(0,0,0,0.2)); border-color: rgba(255, 210, 74, 0.3); box-shadow: 0 0 20px rgba(255, 210, 74, 0.1); }
+  
+  .num-phone { font-size: 15px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .num-rarity { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; margin-bottom: auto; }
+  .num-card.rare .num-rarity { color: var(--purple); }
+  .num-card.legendary .num-rarity { color: var(--gold); }
+  .num-price { font-size: 14px; font-weight: 700; color: var(--gold); margin: 12px 0 8px 0; }
+  
   .sell-btn {
-    margin-top: 8px; width: 100%; padding: 6px; font-size: 12px; border-radius: 8px;
-    background: var(--card); border: 1px solid var(--red); color: var(--red);
-    cursor: pointer; transition: 0.2s;
+    width: 100%; padding: 8px; font-size: 11px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer; transition: 0.2s; font-family: inherit;
   }
-  .sell-btn:active { background: var(--red); color: #fff; }
+  .sell-btn:active { background: var(--red); color: #fff; border-color: var(--red); }
 
-  .empty{text-align:center; color:var(--muted); padding:30px 0; font-size:14px;}
+  /* PROFILE */
+  .profile-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .profile-row:last-child { border-bottom: none; }
+  .profile-label { color: var(--muted); }
+  .profile-val { font-weight: 600; }
 
-  .modal-overlay{
-    position:fixed; inset:0; background:rgba(0,0,0,.75); display:none;
-    align-items:center; justify-content:center; z-index:100; padding:20px;
-    backdrop-filter:blur(4px);
+  /* NAVIGATION */
+  nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(10, 11, 16, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border); display: flex; z-index: 50;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
   }
-  .modal-overlay.active{display:flex;}
-  .modal{
-    background:var(--card); border-radius:20px; padding:24px; max-width:340px; width:100%;
-    text-align:center; animation:pop .25s ease;
-    border:1px solid #2e3342;
+  nav button {
+    flex: 1; background: none; border: none; color: var(--muted);
+    font-size: 10px; font-weight: 600; padding: 8px 0; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-family: inherit;
   }
-  @keyframes pop{from{transform:scale(.85); opacity:0;} to{transform:scale(1); opacity:1;}}
-  .modal .big-phone{font-size:24px; font-weight:800; letter-spacing:1px; margin:12px 0;}
-  .modal .big-rarity{font-size:13px; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px;}
-  .modal .value{color:var(--gold); font-size:18px; font-weight:700; margin-bottom:16px;}
+  nav button .icon { font-size: 22px; transition: 0.3s; filter: grayscale(1) opacity(0.6); }
+  nav button.active { color: var(--accent); }
+  nav button.active .icon { filter: grayscale(0) opacity(1); transform: translateY(-2px) scale(1.1); }
 
-  nav{
-    position:fixed; bottom:0; left:0; right:0; background:rgba(15,17,23,.98);
-    border-top:1px solid #232734; display:flex; z-index:50; padding:8px 0;
-    backdrop-filter:blur(10px);
-  }
-  nav button{
-    flex:1; background:none; border:none; color:var(--muted); font-size:11px;
-    padding:6px 0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px;
-  }
-  nav button.active{color:var(--accent);}
-  nav button .icon{font-size:20px;}
+  .tab { display: none; animation: fadeIn 0.3s ease; }
+  .tab.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-  .tab{display:none;}
-  .tab.active{display:block;}
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 28px; padding: 30px 24px; max-width: 320px; width: 100%;
+    text-align: center; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative; overflow: hidden;
+  }
+  .modal.rare { box-shadow: 0 0 50px rgba(176, 108, 255, 0.2); border-color: rgba(176, 108, 255, 0.4); }
+  .modal.legendary { box-shadow: 0 0 50px rgba(255, 210, 74, 0.2); border-color: rgba(255, 210, 74, 0.4); }
+  
+  @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-icon { font-size: 50px; margin-bottom: 10px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); }
+  .modal-rarity { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; margin-bottom: 8px; }
+  .modal-phone { font-size: 26px; font-weight: 800; letter-spacing: 1px; margin-bottom: 16px; }
+  .modal-val { font-size: 20px; color: var(--gold); font-weight: 800; margin-bottom: 24px; }
 
-  /* Admin */
-  .admin-panel{display:none;}
-  .admin-panel.active{display:block;}
-  .field{margin-bottom:12px;}
-  .field label{display:block; font-size:12px; color:var(--muted); margin-bottom:4px;}
-  .field input, .field select{
-    width:100%; padding:10px; border-radius:10px; border:1px solid #2e3342;
-    background:var(--card2); color:var(--text); font-size:14px;
+  /* ADMIN */
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .field input, .field select {
+    width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border);
+    background: rgba(0,0,0,0.2); color: var(--text); font-size: 14px; font-family: inherit; outline: none;
   }
-  .admin-list{max-height:300px; overflow-y:auto; margin-top:10px;}
-  .admin-row{
-    display:flex; justify-content:space-between; align-items:center; padding:8px 10px;
-    background:var(--card2); border-radius:8px; margin-bottom:6px; font-size:13px;
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .admin-list { max-height: 250px; overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .admin-row {
+    display: flex; justify-content: space-between; align-items: center; padding: 10px 12px;
+    background: rgba(0,0,0,0.2); border-radius: 10px; font-size: 13px; border: 1px solid transparent;
   }
-  .admin-row .del{background:var(--red); border:none; color:#fff; border-radius:6px; padding:4px 8px; cursor:pointer; font-size:12px;}
-  .hint{font-size:11px; color:var(--muted); margin-top:8px; line-height:1.4;}
+  .admin-row:hover { border-color: var(--border); }
+  .admin-del { background: rgba(255, 92, 92, 0.1); border: none; color: var(--red); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  
+  .hint { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14px; }
 </style>
 </head>
 <body>
 
 <header>
-  <div>
-    <div class="title">📱 SimCard Collector</div>
-  </div>
-  <div class="balance">
-    <small>Баланс</small>
-    <span id="balance">0</span> ₽
+  <div class="logo">📱 <span>SIM Collector</span></div>
+  <div class="balance-pill">
+    <small>₽</small> <span id="balance">0</span>
   </div>
 </header>
 
@@ -140,102 +217,130 @@
   <!-- МАГАЗИН -->
   <div class="tab active" id="tab-shop">
     <div class="card">
-      <h2 style="margin:0 0 12px; font-size:15px;">Купить симку</h2>
+      <div class="card-title">Магазин симок</div>
       <div class="shop-grid" id="shopGrid"></div>
-      <div class="hint">Каждая симка даёт случайный номер. Чем дороже — тем выше шанс на редкий номер.</div>
     </div>
-    <div class="card" style="text-align:center;">
-      <button class="btn gold" id="bonusBtn">🎁 Получить ежедневный бонус</button>
-      <div class="hint" id="bonusHint">Заходите каждый день, чтобы получить +500₽. Не пропускайте!</div>
+    
+    <div class="card" style="background: linear-gradient(135deg, rgba(255,210,74,0.1), rgba(0,0,0,0)); border-color: rgba(255,210,74,0.2);">
+      <div class="card-title" style="margin-bottom: 8px;">🎁 Ежедневный бонус</div>
+      <p class="hint" id="bonusHint" style="margin-bottom: 16px;">Заходите каждый день, чтобы получать +500 ₽!</p>
+      <button class="btn btn-gold" id="bonusBtn">Забрать бонус</button>
     </div>
   </div>
 
   <!-- КОЛЛЕКЦИЯ -->
   <div class="tab" id="tab-collection">
     <div class="card">
-      <h2 style="margin:0 0 12px; font-size:15px;">Моя коллекция <span id="collCount" style="color:var(--muted); font-weight:400;"></span></h2>
+      <div class="card-title">Моя коллекция <span id="collCount" style="color:var(--muted); font-weight:500; font-size:14px;"></span></div>
       <div class="collection" id="collection"></div>
-      <div class="empty" id="emptyColl">Коллекция пуста. Купите первую симку!</div>
+      <div class="empty" id="emptyColl">У вас пока нет номеров.<br>Купите первую симку в магазине!</div>
+    </div>
+  </div>
+
+  <!-- ПРОФИЛЬ -->
+  <div class="tab" id="tab-profile">
+    <div class="card">
+      <div class="card-title">Профиль игрока</div>
+      <div class="profile-row">
+        <span class="profile-label">Telegram ID</span>
+        <span class="profile-val" id="profId">Неизвестно</span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-label">Всего номеров</span>
+        <span class="profile-val" id="profTotal">0</span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-label">Стрик входа</span>
+        <span class="profile-val" id="profStreak">0 дней</span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-label">Статус</span>
+        <span class="profile-val" style="color: var(--accent);" id="profStatus">Игрок</span>
+      </div>
     </div>
   </div>
 
   <!-- АДМИНКА -->
   <div class="tab" id="tab-admin">
     <div class="card">
-      <h2 style="margin:0 0 12px; font-size:15px;">⚙️ Админ-панель</h2>
+      <div class="card-title" style="color: var(--red);">⚙️ Панель управления</div>
       
       <div class="field">
-        <label>Баланс игрока (₽)</label>
+        <label>Установить баланс игрока (₽)</label>
         <input type="number" id="adminBalance" value="0">
-        <button class="btn secondary" style="margin-top:8px;" id="setBalanceBtn">Установить баланс</button>
+        <button class="btn btn-secondary" style="margin-top:8px; padding: 10px;" id="setBalanceBtn">Применить</button>
       </div>
 
       <div class="field">
-        <label>Добавить номер в коллекцию вручную</label>
+        <label>Выдать номер вручную</label>
         <input type="text" id="adminPhone" placeholder="+7 999 123-45-67">
-        <select id="adminRarity" style="margin-top:8px;">
-          <option value="common">Обычный</option>
-          <option value="rare">Редкий</option>
-          <option value="legendary">Легендарный</option>
-        </select>
-        <input type="number" id="adminValue" placeholder="Стоимость, ₽" style="margin-top:8px;">
-        <button class="btn secondary" style="margin-top:8px;" id="addNumberBtn">Добавить номер</button>
-      </div>
-
-      <div class="field">
-        <label>Настройка шансов выпадения (в %)</label>
-        <div style="display:flex; gap:8px;">
-          <input type="number" id="chanceCommon" placeholder="Обычный %" value="70">
-          <input type="number" id="chanceRare" placeholder="Редкий %" value="25">
-          <input type="number" id="chanceLegendary" placeholder="Легенд %" value="5">
+        <div style="display:flex; gap:8px; margin-top:8px;">
+            <select id="adminRarity" style="flex:1;">
+              <option value="common">Обычный</option>
+              <option value="rare">Редкий</option>
+              <option value="legendary">Легендарный</option>
+            </select>
+            <input type="number" id="adminValue" placeholder="Цена ₽" style="flex:1;">
         </div>
-        <button class="btn secondary" style="margin-top:8px;" id="saveChancesBtn">Сохранить шансы</button>
-        <div class="hint">Сумма шансов должна быть 100%.</div>
+        <button class="btn btn-secondary" style="margin-top:8px; padding: 10px;" id="addNumberBtn">Добавить в коллекцию</button>
       </div>
 
       <div class="field">
-        <label>Список номеров в пуле</label>
+        <label>Шансы выпадения (в %)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="number" id="chanceCommon" placeholder="Обыч %" value="85">
+          <input type="number" id="chanceRare" placeholder="Редк %" value="13">
+          <input type="number" id="chanceLegendary" placeholder="Лег %" value="2">
+        </div>
+        <button class="btn btn-secondary" style="margin-top:8px; padding: 10px;" id="saveChancesBtn">Сохранить шансы</button>
+        <div class="hint">Сумма всех шансов должна быть строго 100%.</div>
+      </div>
+
+      <div class="field">
+        <label>Управление коллекцией (удаление)</label>
         <div class="admin-list" id="adminNumberList"></div>
       </div>
 
-      <button class="btn" style="background:var(--red);" id="resetBtn">🗑️ Сбросить весь прогресс</button>
+      <button class="btn btn-danger" id="resetBtn">🗑️ Полный сброс прогресса</button>
     </div>
   </div>
 </main>
 
 <!-- МОДАЛКА ВЫПАДЕНИЯ -->
 <div class="modal-overlay" id="modal">
-  <div class="modal">
-    <div style="font-size:40px;" id="modalIcon">📱</div>
-    <div class="big-rarity" id="modalRarity">Обычный</div>
-    <div class="big-phone" id="modalPhone">+7 000 000-00-00</div>
-    <div class="value" id="modalValue">0 ₽</div>
-    <button class="btn" id="modalClose">Забрать</button>
+  <div class="modal" id="modalContent">
+    <div class="modal-icon" id="modalIcon">📱</div>
+    <div class="modal-rarity" id="modalRarity">Обычный</div>
+    <div class="modal-phone" id="modalPhone">+7 000 000-00-00</div>
+    <div class="modal-val" id="modalValue">0 ₽</div>
+    <button class="btn btn-primary" id="modalClose">Забрать в коллекцию</button>
   </div>
 </div>
 
 <nav>
   <button class="active" data-tab="shop"><span class="icon">🛒</span>Магазин</button>
-  <button data-tab="collection"><span class="icon">📚</span>Коллекция</button>
+  <button data-tab="collection"><span class="icon">💼</span>Коллекция</button>
+  <button data-tab="profile"><span class="icon">👤</span>Профиль</button>
   <button data-tab="admin" id="navAdminBtn" style="display:none;"><span class="icon">⚙️</span>Админ</button>
 </nav>
 
 <script>
 /* ==================== НАСТРОЙКИ ==================== */
-// ВСТАВЬТЕ СЮДА ВАШ TELEGRAM ID (узнать можно у @userinfobot)
-const ADMIN_ID = 2037977300; // <--- ЗАМЕНИТЕ ЭТО ЧИСЛО
+// Ваш Telegram ID уже вписан:
+const ADMIN_ID = 2037977300; 
 
 /* ==================== ДАННЫЕ ==================== */
-const STORAGE_KEY = 'simcard_game_v2';
+const STORAGE_KEY = 'simcard_game_v3';
 
 const defaultState = {
   balance: 1000,
-  collection: [], // {phone, rarity, value, id}
-  chances: { common: 70, rare: 25, legendary: 5 },
+  collection: [],
+  chances: { common: 85, rare: 13, legendary: 2 }, // Уменьшенные шансы
   shopPrices: { basic: 100, premium: 500, elite: 2000 },
-  lastBonusDate: '', // Храним строку даты 'YYYY-MM-DD'
-  streak: 0,         // Дней подряд
-  isAdmin: false     // Определяется при запуске
+  lastBonusDate: '',
+  streak: 0,
+  isAdmin: false,
+  userId: null
 };
 
 let state = loadState();
@@ -253,7 +358,7 @@ function saveState(){
   renderAll();
 }
 
-/* ==================== ГЕНЕРАЦИЯ НОМЕРОВ ==================== */
+/* ==================== ГЕНЕРАЦИЯ ==================== */
 const RARITY_DATA = {
   common:    { label:'Обычный',     icon:'📱', minVal:50,   maxVal:300,   color:'var(--text)' },
   rare:      { label:'Редкий',      icon:'💎', minVal:500,  maxVal:3000,  color:'var(--purple)' },
@@ -266,9 +371,7 @@ const PREFIXES = {
   legendary: ['001','002','003','007','100','200','300','500','999','000']
 };
 
-function randomInt(min, max){
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+function randomInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
 
 function generatePhone(rarity){
   const prefixes = PREFIXES[rarity] || PREFIXES.common;
@@ -303,78 +406,63 @@ function generateNumber(){
 
 /* ==================== МАГАЗИН ==================== */
 const SHOP_ITEMS = [
-  { id:'basic',   name:'Обычная симка',  priceKey:'basic',   chanceLabel:'70/25/5' },
-  { id:'premium', name:'Премиум симка',  priceKey:'premium', chanceLabel:'40/45/15' },
-  { id:'elite',   name:'Элитная симка',  priceKey:'elite',   chanceLabel:'10/50/40' }
+  { id:'basic',   name:'Обычная симка',  priceKey:'basic',   chanceLabel:'85/13/2' },
+  { id:'premium', name:'Премиум симка',  priceKey:'premium', chanceLabel:'50/40/10' },
+  { id:'elite',   name:'Элитная симка',  priceKey:'elite',   chanceLabel:'20/50/30' }
 ];
 
 function shopChances(itemId){
-  if(itemId === 'premium') return { common:40, rare:45, legendary:15 };
-  if(itemId === 'elite')   return { common:10, rare:50, legendary:40 };
+  if(itemId === 'premium') return { common:50, rare:40, legendary:10 };
+  if(itemId === 'elite')   return { common:20, rare:50, legendary:30 };
   return state.chances;
 }
 
 function buySim(itemId){
   const item = SHOP_ITEMS.find(i => i.id === itemId);
   const price = state.shopPrices[item.priceKey];
-  if(state.balance < price){
-    alert('Недостаточно средств!');
-    return;
-  }
+  if(state.balance < price){ alert('Недостаточно средств!'); return; }
+  
   state.balance -= price;
-
   const saved = state.chances;
   state.chances = shopChances(itemId);
   const num = generateNumber();
   state.chances = saved;
-
   state.collection.push(num);
+  
   saveState();
   showModal(num);
 }
 
-/* ==================== ПРОДАЖА СИМКИ ==================== */
+/* ==================== ПРОДАЖА ==================== */
 function sellNumber(id) {
   const index = state.collection.findIndex(n => n.id === id);
   if (index === -1) return;
-  
   const num = state.collection[index];
-  if (!confirm(`Вы уверены, что хотите продать номер ${num.phone} за ${num.value.toLocaleString('ru-RU')} ₽?`)) return;
-
+  
+  if (!confirm(`Продать номер ${num.phone} за ${num.value.toLocaleString('ru-RU')} ₽?`)) return;
   state.balance += num.value;
-  state.collection.splice(index, 1); // Удаляем из коллекции
+  state.collection.splice(index, 1);
   saveState();
 }
 
-/* ==================== ЕЖЕДНЕВНЫЙ БОНУС (СТРИК) ==================== */
+/* ==================== БОНУС ==================== */
 function claimDailyBonus() {
-  const today = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD'
-  
-  if (state.lastBonusDate === today) {
-    alert('Вы уже получали бонус сегодня. Возвращайтесь завтра!');
-    return;
-  }
+  const today = new Date().toISOString().split('T')[0];
+  if (state.lastBonusDate === today) { alert('Вы уже получали бонус сегодня. Возвращайтесь завтра!'); return; }
 
-  // Проверка на непрерывность (если вчера заходили)
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-  if (state.lastBonusDate === yesterdayStr) {
-    state.streak += 1;
-  } else {
-    state.streak = 1; // Сброс стрика, если пропустили день
-  }
-
-  // Ограничение максимум 7 дней
+  if (state.lastBonusDate === yesterdayStr) { state.streak += 1; } 
+  else { state.streak = 1; }
   if (state.streak > 7) state.streak = 7;
 
   state.balance += 500;
   state.lastBonusDate = today;
   
   saveState();
-  alert(`🎉 Бонус получен! +500 ₽\nВаш стрик: ${state.streak} дн.`);
-  updateBonusUI();
+  alert(`🎉 Бонус получен! +500 ₽\nСтрик: ${state.streak} дн.`);
 }
 
 function updateBonusUI() {
@@ -384,32 +472,36 @@ function updateBonusUI() {
 
   if (state.lastBonusDate === today) {
     btn.disabled = true;
-    btn.textContent = '✅ Бонус получен сегодня';
-    hint.textContent = `Стрик: ${state.streak} дн. Приходите завтра!`;
+    btn.textContent = '✅ Уже получено';
+    hint.innerHTML = `<b>Стрик: ${state.streak} дн.</b><br>Ждем вас завтра!`;
   } else {
     btn.disabled = false;
-    btn.textContent = '🎁 Получить бонус +500 ₽';
-    hint.textContent = `Стрик: ${state.streak} дн. Заходите каждый день, чтобы не потерять прогресс!`;
+    btn.textContent = '🎁 Забрать +500 ₽';
+    hint.innerHTML = `<b>Стрик: ${state.streak} дн.</b><br>Заходите каждый день!`;
   }
 }
 
-/* ==================== МОДАЛКА ==================== */
+/* ==================== UI ==================== */
 function showModal(num){
   const data = RARITY_DATA[num.rarity];
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modalContent');
+  
+  content.className = 'modal ' + num.rarity;
   document.getElementById('modalIcon').textContent = data.icon;
   document.getElementById('modalRarity').textContent = data.label;
   document.getElementById('modalRarity').style.color = data.color;
   document.getElementById('modalPhone').textContent = num.phone;
   document.getElementById('modalPhone').style.color = data.color;
   document.getElementById('modalValue').textContent = num.value.toLocaleString('ru-RU') + ' ₽';
-  document.getElementById('modal').classList.add('active');
+  
+  modal.classList.add('active');
 }
 
 document.getElementById('modalClose').onclick = () => {
   document.getElementById('modal').classList.remove('active');
 };
 
-/* ==================== РЕНДЕР ==================== */
 function renderBalance(){
   document.getElementById('balance').textContent = state.balance.toLocaleString('ru-RU');
 }
@@ -418,10 +510,14 @@ function renderShop(){
   const grid = document.getElementById('shopGrid');
   grid.innerHTML = SHOP_ITEMS.map(item => `
     <div class="shop-item">
-      <h3>${item.name}</h3>
-      <div class="price">${state.shopPrices[item.priceKey]} ₽</div>
-      <div class="chance">Шансы: ${item.chanceLabel}</div>
-      <button class="btn" data-buy="${item.id}">Купить</button>
+      <div class="shop-info">
+        <h3>${item.name}</h3>
+        <div class="shop-chance">Шансы: ${item.chanceLabel}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="shop-price">${state.shopPrices[item.priceKey]} ₽</div>
+        <button class="shop-btn" data-buy="${item.id}">Купить</button>
+      </div>
     </div>
   `).join('');
 
@@ -444,29 +540,32 @@ function renderCollection(){
   }
   empty.style.display = 'none';
 
-  coll.innerHTML = state.collection.slice().reverse().map(num => {
-    const data = RARITY_DATA[num.rarity];
-    const cls = num.rarity === 'legendary' ? 'legendary' : num.rarity === 'rare' ? 'rare' : '';
-    return `
-      <div class="num-card ${cls}">
-        <div class="phone">${num.phone}</div>
-        <div class="rarity">${data.label}</div>
-        <div class="price">${num.value.toLocaleString('ru-RU')} ₽</div>
-        <button class="sell-btn" data-sell="${num.id}">Продать за ${num.value.toLocaleString('ru-RU')} ₽</button>
-      </div>
-    `;
-  }).join('');
+  coll.innerHTML = state.collection.slice().reverse().map(num => `
+    <div class="num-card ${num.rarity}">
+      <div class="num-phone">${num.phone}</div>
+      <div class="num-rarity">${RARITY_DATA[num.rarity].label}</div>
+      <div class="num-price">${num.value.toLocaleString('ru-RU')} ₽</div>
+      <button class="sell-btn" data-sell="${num.id}">Продать</button>
+    </div>
+  `).join('');
 
-  // Привязка кнопок продажи
   coll.querySelectorAll('[data-sell]').forEach(btn => {
     btn.onclick = () => sellNumber(btn.dataset.sell);
   });
 }
 
-function renderAdmin(){
-  // Если не админ — не рендерим вообще
-  if (!state.isAdmin) return; 
+function renderProfile() {
+  document.getElementById('profId').textContent = state.userId || 'Неизвестно';
+  document.getElementById('profTotal').textContent = state.collection.length;
+  document.getElementById('profStreak').textContent = state.streak + ' дн.';
+  if (state.isAdmin) {
+    document.getElementById('profStatus').textContent = 'Администратор';
+    document.getElementById('profStatus').style.color = 'var(--red)';
+  }
+}
 
+function renderAdmin(){
+  if (!state.isAdmin) return; 
   document.getElementById('adminBalance').value = state.balance;
   document.getElementById('chanceCommon').value = state.chances.common;
   document.getElementById('chanceRare').value = state.chances.rare;
@@ -474,14 +573,13 @@ function renderAdmin(){
 
   const list = document.getElementById('adminNumberList');
   if(!state.collection.length){
-    list.innerHTML = '<div class="empty" style="padding:14px 0;">Номеров пока нет</div>';
+    list.innerHTML = '<div class="empty" style="padding:14px 0; font-size:12px;">Список пуст</div>';
     return;
   }
   list.innerHTML = state.collection.slice().reverse().map(num => `
     <div class="admin-row">
       <span>${num.phone}</span>
-      <span style="color:var(--muted); font-size:11px;">${RARITY_DATA[num.rarity].label}</span>
-      <button class="del" data-del="${num.id}">✕</button>
+      <button class="admin-del" data-del="${num.id}">✕</button>
     </div>
   `).join('');
 
@@ -497,6 +595,7 @@ function renderAll(){
   renderBalance();
   renderShop();
   renderCollection();
+  renderProfile();
   updateBonusUI();
   if (state.isAdmin) renderAdmin();
 }
@@ -504,8 +603,7 @@ function renderAll(){
 /* ==================== АДМИН-ДЕЙСТВИЯ ==================== */
 document.getElementById('setBalanceBtn').onclick = () => {
   if (!state.isAdmin) return;
-  const val = parseInt(document.getElementById('adminBalance').value) || 0;
-  state.balance = val;
+  state.balance = parseInt(document.getElementById('adminBalance').value) || 0;
   saveState();
 };
 
@@ -515,10 +613,7 @@ document.getElementById('addNumberBtn').onclick = () => {
   const rarity = document.getElementById('adminRarity').value;
   const value = parseInt(document.getElementById('adminValue').value) || 0;
   if(!phone){ alert('Введите номер'); return; }
-  state.collection.push({
-    id: Date.now() + '_' + Math.random().toString(36).slice(2,7),
-    phone, rarity, value
-  });
+  state.collection.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2,7), phone, rarity, value });
   document.getElementById('adminPhone').value = '';
   document.getElementById('adminValue').value = '';
   saveState();
@@ -529,10 +624,7 @@ document.getElementById('saveChancesBtn').onclick = () => {
   const c = parseInt(document.getElementById('chanceCommon').value) || 0;
   const r = parseInt(document.getElementById('chanceRare').value) || 0;
   const l = parseInt(document.getElementById('chanceLegendary').value) || 0;
-  if(c + r + l !== 100){
-    alert('Сумма шансов должна быть 100%');
-    return;
-  }
+  if(c + r + l !== 100){ alert('Сумма шансов должна быть 100%'); return; }
   state.chances = { common:c, rare:r, legendary:l };
   saveState();
 };
@@ -540,44 +632,40 @@ document.getElementById('saveChancesBtn').onclick = () => {
 document.getElementById('resetBtn').onclick = () => {
   if (!state.isAdmin) return;
   if(confirm('Сбросить весь прогресс?')){
+    const isAdm = state.isAdmin;
+    const uId = state.userId;
     state = JSON.parse(JSON.stringify(defaultState));
-    state.isAdmin = true; // Сохраняем права админа
+    state.isAdmin = isAdm;
+    state.userId = uId;
     saveState();
   }
 };
 
 /* ==================== ТАБЫ ==================== */
-document.querySelectorAll('nav button').forEach(btn => {
-  if (btn.id === 'navAdminBtn' && !state.isAdmin) return; // Скрываем вкладку для не-админов
-  
-  btn.onclick = () => {
-    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-  };
-});
+function setupTabs() {
+  document.querySelectorAll('nav button').forEach(btn => {
+    if (btn.id === 'navAdminBtn' && !state.isAdmin) return;
+    
+    btn.onclick = () => {
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    };
+  });
+}
 
 document.getElementById('bonusBtn').onclick = claimDailyBonus;
 
-/* ==================== ИНИЦИАЛИЗАЦИЯ TELEGRAM И ПРАВ ==================== */
+/* ==================== ИНИЦИАЛИЗАЦИЯ ==================== */
 function initApp() {
-  // Проверяем, есть ли данные от Telegram
   if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
     const user = Telegram.WebApp.initDataUnsafe.user;
+    state.userId = user.id;
     
-    // Проверка на админа
     if (user.id === ADMIN_ID) {
       state.isAdmin = true;
-      // Показываем кнопку админа
       document.getElementById('navAdminBtn').style.display = 'flex';
-      // Привязываем клик к вкладке админки
-      document.getElementById('navAdminBtn').onclick = () => {
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-        document.getElementById('navAdminBtn').classList.add('active');
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById('tab-admin').classList.add('active');
-      };
     } else {
       state.isAdmin = false;
       document.getElementById('navAdminBtn').style.display = 'none';
@@ -586,16 +674,16 @@ function initApp() {
     Telegram.WebApp.ready();
     Telegram.WebApp.expand();
   } else {
-    // Если открыто вне Telegram (например, в браузере на ПК),
-    // разрешаем админку для теста. В продакшене лучше запретить.
-    console.log("Открыто вне Telegram. Проверьте ADMIN_ID в коде.");
-    if (ADMIN_ID === 123456789) {
-       // Если ID не заменен, показываем админку для теста
+    // Если открыто в браузере (не в ТГ) - даем права админа для удобства разработки
+    state.userId = 'Web Browser';
+    if (ADMIN_ID) { 
        state.isAdmin = true;
        document.getElementById('navAdminBtn').style.display = 'flex';
     }
   }
   
+  saveState(); // Сохраняем данные юзера
+  setupTabs();
   renderAll();
 }
 
